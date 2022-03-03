@@ -1,0 +1,70 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: ---
+Parameters:
+  TargetVpc:
+    Description: Target VPC ID.
+    Type: String
+    Default: vpc-3b4cab5d
+  PrivateSubnetOne:
+    Description: Private Subnet 1 ID
+    Type: String
+    Default: subnet-b461c1fc
+  PrivateSubnetTwo:
+    Description: Private Subnet 1 ID
+    Type: String
+    Default: subnet-7c372527
+  ClientSecurityGroup:
+    Description: Client Security Group ID
+    Type: String
+  BrokerInstanceType:
+    Description: Broker Instance Type
+    Default: kafka.m5.large
+    Type: String
+  BrokerStorageSize:
+    Description: Broker Storage Size
+    Default: 10
+    Type: Number
+  BrokerNum:
+    Description: Broker Number
+    Default: 2
+    Type: Number
+
+Resources:
+  MSKCluster:
+    Type: 'AWS::MSK::Cluster'
+    Properties:
+      BrokerNodeGroupInfo:
+        ClientSubnets:
+          - !Ref PrivateSubnetOne
+          - !Ref PrivateSubnetTwo
+        InstanceType: !Ref BrokerInstanceType
+        SecurityGroups:
+          - !Ref MSKSecurityGroup
+        StorageInfo:
+          EBSStorageInfo:
+            VolumeSize: !Ref BrokerStorageSize
+      ClusterName: HogeCluster
+      KafkaVersion: 2.6.2
+      EncryptionInfo:
+        EncryptionInTransit:
+          ClientBroker: TLS
+          InCluster: true
+      NumberOfBrokerNodes: !Ref BrokerNum
+  MSKSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Enable SSH access via port 22
+      VpcId: !Ref TargetVpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 2181
+          ToPort: 2181
+          SourceSecurityGroupId: !Ref ClientSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 9094
+          ToPort: 9094
+          SourceSecurityGroupId: !Ref ClientSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 9092
+          ToPort: 9092
+          SourceSecurityGroupId: !Ref ClientSecurityGroup
