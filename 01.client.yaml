@@ -37,9 +37,10 @@ Resources:
           package_update: true
           package_upgrade: true
           runcmd:
+          - amazon-linux-extras enable corretto8
           - yum update -y 
           - yum install python3.7 -y
-          - yum install java-1.8.0
+          - yum install java-1.8.0-amazon-corretto -y
           - yum erase awscli -y
           - cd /home/ec2-user
           - echo "export PATH=.local/bin:$PATH" >> .bash_profile
