@@ -1,0 +1,45 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: ---
+Parameters:
+  TargetVpc:
+    Description: Target VPC ID.
+    Type: String
+    Default: vpc-3b4cab5d
+  PrivateSubnetOne:
+    Description: Private Subnet 1 ID
+    Type: String
+    Default: subnet-b461c1fc
+  PrivateSubnetTwo:
+    Description: Private Subnet 1 ID
+    Type: String
+    Default: subnet-7c372527
+  ClientSecurityGroup:
+    Description: Client Security Group ID
+    Type: String
+
+Resources:
+  MSKClusterServerless:
+    Type: AWS::MSK::ServerlessCluster
+    Properties: 
+      ClientAuthentication: 
+        Sasl: 
+          Iam: 
+            Enabled: true
+      ClusterName: HogeClusterServerless
+      VpcConfigs: 
+        - SecurityGroups: 
+            - !Ref MSKSecurityGroup
+          SubnetIds: 
+          - !Ref PrivateSubnetOne
+          - !Ref PrivateSubnetTwo
+
+  MSKSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: for MSK Serverless
+      VpcId: !Ref TargetVpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 9098
+          ToPort: 9098
+          SourceSecurityGroupId: !Ref ClientSecurityGroup

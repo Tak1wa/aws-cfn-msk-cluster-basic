@@ -30,6 +30,8 @@ Resources:
       KeyName: !Ref KeyPairVM
       IamInstanceProfile: !Ref EC2InstanceProfile
       SubnetId: !Ref PrivateSubnetOne
+      SecurityGroupIds: 
+        - !Ref KafkaClientInstanceSecurityGroup
       ImageId: !Ref ClientAMI
       UserData:
         Fn::Base64: |
@@ -47,8 +49,12 @@ Resources:
           - mkdir kafka
           - mkdir mm
           - cd kafka
-          - wget https://archive.apache.org/dist/kafka/2.6.2/kafka_2.12-2.6.2.tgz
-          - tar -xzf kafka_2.12-2.6.2.tgz
+          - wget https://archive.apache.org/dist/kafka/2.8.1/kafka_2.12-2.8.1.tgz
+          - tar -xzf kafka_2.12-2.8.1.tgz
+          - cd kafka_2.12-2.8.1/libs
+          - sudo wget https://github.com/aws/aws-msk-iam-auth/releases/download/v1.1.1/aws-msk-iam-auth-1.1.1-all.jar
+          - cd ../bin
+          - touch client.properties
           - cd /home/ec2-user
           - wget https://bootstrap.pypa.io/get-pip.py
           - su -c "python3.7 get-pip.py --user" -s /bin/sh ec2-user
@@ -58,6 +64,16 @@ Resources:
           - chgrp -R ec2-user ./kafka
           - chown -R ec2-user ./mm
           - chgrp -R ec2-user ./mm
+          write_files:
+          - path: /home/ec2-user/kafka/kafka_2.12-2.8.1/bin/client.properties
+            permissions: 0644
+            owner: root
+            content: |
+              security.protocol=SASL_SSL
+              sasl.mechanism=AWS_MSK_IAM
+              sasl.jaas.config=software.amazon.msk.auth.iam.IAMLoginModule required;
+              sasl.client.callback.handler.class=software.amazon.msk.auth.iam.IAMClientCallbackHandler
+
   EC2Role:
     Type: 'AWS::IAM::Role'
     Properties:
@@ -73,6 +89,19 @@ Resources:
       ManagedPolicyArns:
         - 'arn:aws:iam::aws:policy/AmazonMSKFullAccess'
         - 'arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore'
+      Policies:
+        - PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              Effect: Allow
+              Action:
+                - kafka-cluster:CreateTopic
+                - kafka-cluster:ReadData
+                - kafka-cluster:DescribeTopic
+                - kafka-cluster:Connect
+                - kafka-cluster:WriteData
+              Resource: "*"
+          PolicyName: hoge-client-policy
   EC2InstanceProfile:
     Type: 'AWS::IAM::InstanceProfile'
     Properties:
